@@ -1,0 +1,5 @@
+---
+- name: Helth check
+  hosts:  web
+  roles:
+  - virtual_machene
