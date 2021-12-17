@@ -1,13 +1,14 @@
 ---
 # tasks file for virtual_machene
 #
-- name: copy file template
+- name: copy helthcheck template
   template:
     src:  virtual.j2
     dest: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.xml
+    mode: 0740
 
 - name: Disk Space
-  shell:  df -h >> /tmp/primary_data.txt
+  shell:  df -h >> /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.xml
 
 - name: Install expect
   package:
@@ -20,6 +21,6 @@
     dest: scp.expect
     mode: 0740
 
-- name: Execute scp.expect
+- name: download {{  ansible_default_ipv4.address  }}_helthcheck.xml file
   shell:  ./scp.expect
   
