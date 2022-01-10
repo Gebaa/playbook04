@@ -1,5 +1,43 @@
 ---
 - name: Helth check
-  hosts:  web
-  roles:
-  - virtual_machene
+  hosts:  servers
+  ##roles:
+  ##- virtual_machene
+
+  tasks:
+    - name: Virtual machenes role execution
+      include_role:
+        name: virtual_machene
+      when: ansible_virtualization_type == "VMware"
+
+    - name: Bare Metal machenes role execution
+      include_role:                       
+        name: bare_metal            
+      ##when: facter_virtual == "physical"
+      when: ansible_virtualization_type != "VMware"
+
+- name: Sent email alert
+  hosts:  local
+  tasks:
+    - name: archiving the hosts
+      archive:
+        path: /tmp/health_check
+        dest: /tmp/health_check.tgz
+
+    - name: Sending an e-mail using Gmail SMTP servers
+      mail:
+        host: smtp.gmail.com
+        port: 587
+        username: plexigebris@gmail.com
+        password: Gebris@10192029
+        to: eranga.j@antlabs.com
+        subject: Health Report - State Critical
+        attach: /tmp/health_check.tgz
+    ###    body: Please refer the attachment for helth check of host {{  ansible_fqdn  }}
+        body: Some Hosts are in critical state. Refer the attached list of healthcheck files for each hosts for identify the each threshold.
+      delegate_to: localhost
+
+    - name: Remove healthcheck archive
+      file:
+        path: /tmp/health_check.tgz
+        state:  absent

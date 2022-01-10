@@ -1,0 +1,21 @@
+DATE:	{{	ansible_date_time.date	}}
+TIME:	{{	ansible_date_time.time	}}
+FQDN: {{  ansible_fqdn  }}
+IPADDRESS:	{{	ansible_default_ipv4.address	}}
+UPTIME:	{{	facter_uptime_hours	}}h
+OS TYPE:	{{	ansible_distribution	}}
+OS_ARCHITECTURE:	{{	ansible_userspace_architecture	}}
+VIRTUALIZATION_PLATFORM:	{{	facter_virtual	}}
+CPU's COUNT:	{{	facter_physicalprocessorcount	}}
+
+
+TOTAL_MEMORY:	{{	facter_memorysize_mb	}}MB
+FREE_MEMORY:	{{	facter_memoryfree_mb	}}MB
+
+DISK_UTILIZATION:
+
+{{	disk_util_fact	}}
+
+SERVICE_STATUS:
+
+{{  all_service.stdout  }}

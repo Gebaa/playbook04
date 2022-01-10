@@ -1,2 +1,19 @@
 ---
 # vars file for bare_metal
+#
+mon_service_chrony:
+  - network.service
+  - rsyslog.service
+  - sshd.service
+  - firewalld.service
+  - auditd.service
+  - chronyd.service
+  - ntpd.service
+
+mon_service_ntpd:
+  - network.service
+  - rsyslog.service
+  - sshd.service
+  - firewalld.service
+  - auditd.service
+  - ntpd.service

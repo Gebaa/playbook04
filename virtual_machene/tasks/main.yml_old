@@ -1,0 +1,30 @@
+---
+# tasks file for virtual_machene
+#
+- name: copy helthcheck template
+  template:
+    src:  virtual.j2
+    dest: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+    mode: 0740
+
+- name: Install expect
+  package:
+    name: expect
+    state:  present
+
+- name: Prompt disk space
+  shell: df -h | grep -Ev 'Filesystem|tmpfs'| awk -F " " '{print $6 " " $5}' >> /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+
+- name: Coppy helthcheck file
+  template:
+    src:  scp.j2
+    dest: scp.expect
+    mode: 0740
+
+- name: download {{  ansible_default_ipv4.address  }}_helthcheck.xml file
+  shell:  ./scp.expect
+  
+- name: Remove file once scp compleate
+  file:
+    path: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+    state:  absent

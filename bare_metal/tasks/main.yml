@@ -1,2 +1,146 @@
 ---
-# tasks file for bare_metal
+# Virtual Machene Role
+#-------------------------------------disk------------------------------------------------------------------------
+- name: Get disk space
+  shell:  df -h | grep -Ev 'Filesystem|tmpfs'| awk -F " " '{print $1 " " $6 " " $5}'
+  register: disk
+
+- name: Set facts about file system
+  set_fact:
+      disk_util_fact: "{{  disk.stdout }}"
+
+- name: copy disk script
+  copy:
+    src:  check_disk.sh
+    dest: /tmp/check_disk.sh
+    mode: '775'
+
+- name: execute script
+  command:  /tmp/check_disk.sh
+  register: disk_critical
+
+- name: Set facts about critical
+  set_fact:
+    disk_util_critic: "{{ disk_critical.stdout }}"
+
+#--------------------------------UPTIME-----------------------------------------------------------------------------
+
+- name: Convert uptime value from seconds to hour
+  set_fact:
+    up_time_h:  "{{ ansible_uptime_seconds / 60 / 60 / 24 }}"
+#--------------------------------CPU---------------------------------------------------------------------------------
+
+- name: get cpu usage
+  shell:  cat /proc/stat |grep cpu |head -1|awk '{print ($5*100)/($2+$3+$4+$5+$6+$7+$8+$9+$10)}'|awk '{print 100-$1}'
+  register: avg_cpu
+
+- name: set CPU facts
+  set_fact:
+    avg_cpu_fact: "{{ avg_cpu.stdout  }}"
+
+- name: Set integer value
+  shell: cat /proc/stat |grep cpu |head -1|awk '{print ($5*100)/($2+$3+$4+$5+$6+$7+$8+$9+$10)}'|awk '{print 100-$1}'| awk -F "." '{print $1}'
+  register: avg_cpu_int
+
+- name: set CPU int fact
+  set_fact:
+    avg_cpu_int_fact: "{{ avg_cpu_int.stdout  }}"
+
+#-----------------------------------TIMESYNC STATUS------------------------------------------------------------------
+
+- name: Populate facts
+  service_facts:
+
+#----------------------------------Services check---------------------------------------------------------------------
+
+- name: copy services script
+  copy:
+    src:  check_service.sh
+    dest: /tmp/check_service.sh
+    mode: '775'
+
+- name: execute chrony  process script
+  shell: /tmp/check_service.sh {{  item  }}
+  loop: "{{ mon_service_chrony }}"
+  ignore_errors: true
+  when: ( ansible_facts.services['chronyd.service'].state == "running" )
+
+- name: execute ntpd process script
+  shell: /tmp/check_service.sh {{  item  }}
+  loop: "{{ mon_service_ntpd }}"
+  ignore_errors: true
+  when: ( ansible_facts.services['chronyd.service'].state != "running" )
+
+- name: Get inactive services
+  shell:  cat /tmp/service_status | grep inactive | head -1 | awk -F " " '{print $2}'
+  ignore_errors:  true
+  register: inactive_status
+
+- name: Set facts about services
+  set_fact:
+    inactive_status_fact: "{{ inactive_status.stdout }}"
+
+- name: Service list
+  shell:  cat /tmp/service_status
+  register: all_service
+
+- name: Set all services facts
+  set_fact:
+    all_service_fact: "{{ all_service.stdout_lines  }}"
+
+#---------------------------------COPY Template-------------------------------------------------------------------------
+
+- name: copy helthcheck template
+  template:
+    src:  bare.j2
+    dest: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+    mode: 0740
+
+- name: Install expect
+  package:
+    name: expect
+    state:  present
+
+- debug:
+    msg: Disk space is {{ disk_util_fact }} and disk space critical
+  when: disk_util_critic == "Critical"
+
+- name: Coppy SCP file
+  template:
+    src:  scp.j2
+    dest: scp.expect
+    mode: 0740
+#-------------------------------------------------------------------------------------------------------------------------
+
+- name: download {{  ansible_default_ipv4.address  }}_helthcheck.txt file
+  shell:  ./scp.expect
+  when: ( disk_util_critic == "Critical" ) or ( ansible_memory_mb.real.free <= 1000 ) or ( avg_cpu_int_fact <= 1 ) or ( inactive_status_fact == "inactive" )
+ 
+- name: Read content of the file
+  command:  cat /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+  register: final_body
+
+- name: Remove file once scp compleate
+  file:
+      path: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+      state:  absent
+
+- name: Remove status file
+  file:
+    path: /tmp/service_status
+    state:  absent
+
+#- name: Sending an e-mail using Gmail SMTP servers
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: plexigebris@gmail.com
+#    password: Gebris@10192029
+#    to: eranga.j@antlabs.com
+#    subject: Health Report - {{ ansible_default_ipv4.address  }} - {{ ansible_fqdn  }} - State Critical
+#    attach: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+##    body: Please refer the attachment for helth check of host {{  ansible_fqdn  }}
+#    body: Check Disk Utilization "{{ disk_util_critic }}". Free Memory is "{{ ansible_memory_mb.real.free }}" MB. Average CPU is "{{ avg_cpu_fact  }}" . Please lookout the following services "{{ all_service.stdout }}". For More detail please refer the attachment.
+#  delegate_to: localhost
+#  when: ( disk_util_critic == "Critical" ) or ( ansible_memory_mb.real.free <= 1000 ) or ( avg_cpu_int_fact <= 1 ) or ( inactive_status_fact == "inactive" )
+

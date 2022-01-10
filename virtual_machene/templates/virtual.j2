@@ -1,4 +1,25 @@
-<<< {{  ansible_default_ipv4.address  }} - {{  ansible_hostname  }} - HELTH CHECK - {{  ansible_date_time.date }} : {{  ansible_date_time.time }} >>>
+DATE: {{	ansible_date_time.date	}}
+TIME: {{	ansible_date_time.time	}}
+FQDN: {{	ansible_fqdn	}}
+IP_ADDRESS: {{	ansible_default_ipv4.address	}}
+UPTIME:	{{	up_time_h	}}Days
+OS_TYPE: {{	ansible_distribution	}}
+OS_ARCHITECTURE: {{	ansible_userspace_architecture	}}
+VIRTUALIZATION_PLATFORM: {{	ansible_product_name	}}
 
-                ========= FILE SYSTEM ===========
+TOTAL_MEMORY: {{	ansible_memory_mb.real.total	}} MB
+FREE_MEMORY: {{	ansible_memory_mb.real.free	}} MB
+USED_MEMORY: {{	ansible_memory_mb.real.used	}} MB
 
+CPU_CORE's: {{	ansible_processor_cores	}}
+PROCESSOR_COUNT: {{	ansible_processor_count	}}
+CPU_AVERAGE: {{	avg_cpu_fact	}}
+
+
+DISK_UTILIZATION:
+
+{{  disk_util_fact  }}
+
+SERVICE_STATUS:
+
+{{	all_service.stdout	}}

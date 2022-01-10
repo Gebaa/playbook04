@@ -1,0 +1,86 @@
+---
+# tasks file for virtual_machene
+#
+- name: Get disk space
+  shell:  df -h | grep -Ev 'Filesystem|tmpfs'| awk -F " " '{print $1 " " $6 " " $5}'
+  register: disk
+
+- name: Set facts about file system
+  set_fact:
+      disk_util_fact: "{{  disk.stdout }}"
+
+- name: copy disk script
+  copy:
+    src:  check_disk.sh
+    dest: /tmp/check_disk.sh
+    mode: '775'
+
+- name: execute script
+  command:  /tmp/check_disk.sh
+  register: disk_critical
+
+- name: Set facts about critical
+  set_fact:
+    disk_util_critic: "{{ disk_critical.stdout }}"
+
+- name: copy helthcheck template
+  template:
+    src:  bare.j2
+    dest: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+    mode: 0740
+
+- name: Install expect
+  package:
+    name: expect
+    state:  present
+
+- debug:
+    msg: Disk space is {{ disk_util_fact }}
+  when: disk_util_critic == "Critical"
+
+- name: Coppy helthcheck file
+  template:
+    src:  scp.j2
+    dest: scp.expect
+    mode: 0740
+
+- name: check service status
+  command:  systemctl is-active "{{  item }}"
+  loop: "{{ mon_service }}"
+  ignore_errors:  true
+  register: service_status
+
+- debug: 
+    msg:  "{{ service_status.stdout_line  }}"
+
+#- name: check the running services and status
+#  shell:  echo "sshd_service `systemctl status {{ item  }} | grep Active | awk -F " " '{print $2$3}'`" >> /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+#  loop: {{ mon_service }}
+
+- name: download {{  ansible_default_ipv4.address  }}_helthcheck.txt file
+  shell:  ./scp.expect
+  
+- name: Remove file once scp compleate
+  file:
+      path: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+      state:  absent
+
+- name: Read content of the file
+  command:  cat /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+  register: final_body
+
+
+- name: Sending an e-mail using Gmail SMTP servers
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: plexigebris@gmail.com
+    password: Gebris@10192029
+    to: eranga.j@antlabs.com
+    subject: Health Report - {{ ansible_default_ipv4.address  }} - {{ ansible_fqdn  }} - State Critical
+    attach: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+#    body: Please refer the attachment for helth check of host {{  ansible_fqdn  }} 
+    body: "{{ final_body  }}"
+  delegate_to: localhost
+  when: disk_util_critic == "Critical"
+

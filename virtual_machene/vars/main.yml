@@ -1,2 +1,21 @@
 ---
 # vars file for virtual_machene
+mon_service_chrony:
+  - network.service
+  - rsyslog.service
+  - sshd.service
+  - firewalld.service
+  - auditd.service
+  - chronyd.service
+  - ntpd.service
+
+mon_service_ntpd:
+  - network.service
+  - rsyslog.service
+  - sshd.service
+  - firewalld.service
+  - auditd.service
+  - ntpd.service
+
+
+health_check: "{{ lookup('/tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt','/tmp/{{  ansible_default_ipv4.address  }}_helthcheck.json') | from_json  }}"
