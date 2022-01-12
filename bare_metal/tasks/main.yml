@@ -114,33 +114,18 @@
 
 - name: download {{  ansible_default_ipv4.address  }}_helthcheck.txt file
   shell:  ./scp.expect
-  when: ( disk_util_critic == "Critical" ) or ( ansible_memory_mb.real.free <= 1000 ) or ( avg_cpu_int_fact <= 1 ) or ( inactive_status_fact == "inactive" )
+  when: ( disk_util_critic == "Critical" ) or ( ansible_memory_mb.real.free <= 100000 ) or ( avg_cpu_int_fact <= 1 ) or ( inactive_status_fact == "inactive" )
  
-- name: Read content of the file
-  command:  cat /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
-  register: final_body
+#- name: Read content of the file
+#  command:  cat /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+#  register: final_body
 
 - name: Remove file once scp compleate
   file:
-      path: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+      path: 
+        - /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
+        - /tmp/service_status
       state:  absent
 
-- name: Remove status file
-  file:
-    path: /tmp/service_status
-    state:  absent
-
-#- name: Sending an e-mail using Gmail SMTP servers
-#  mail:
-#    host: smtp.gmail.com
-#    port: 587
-#    username: plexigebris@gmail.com
-#    password: Gebris@10192029
-#    to: eranga.j@antlabs.com
-#    subject: Health Report - {{ ansible_default_ipv4.address  }} - {{ ansible_fqdn  }} - State Critical
-#    attach: /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt
-##    body: Please refer the attachment for helth check of host {{  ansible_fqdn  }}
-#    body: Check Disk Utilization "{{ disk_util_critic }}". Free Memory is "{{ ansible_memory_mb.real.free }}" MB. Average CPU is "{{ avg_cpu_fact  }}" . Please lookout the following services "{{ all_service.stdout }}". For More detail please refer the attachment.
-#  delegate_to: localhost
-#  when: ( disk_util_critic == "Critical" ) or ( ansible_memory_mb.real.free <= 1000 ) or ( avg_cpu_int_fact <= 1 ) or ( inactive_status_fact == "inactive" )
-
+- name: Removindg downloaded file
+  shell: rm -rf /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt /tmp/service_status /tmp/check_*

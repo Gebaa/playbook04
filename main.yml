@@ -21,8 +21,9 @@
   tasks:
     - name: archiving the hosts
       archive:
-        path: /tmp/health_check
-        dest: /tmp/health_check.tgz
+        path: /tmp/*_helthcheck.txt
+        dest: /tmp/health_check.zip
+        format: zip
 
     - name: Sending an e-mail using Gmail SMTP servers
       mail:
@@ -32,12 +33,10 @@
         password: Gebris@10192029
         to: eranga.j@antlabs.com
         subject: Health Report - State Critical
-        attach: /tmp/health_check.tgz
+        attach: /tmp/health_check.zip
     ###    body: Please refer the attachment for helth check of host {{  ansible_fqdn  }}
         body: Some Hosts are in critical state. Refer the attached list of healthcheck files for each hosts for identify the each threshold.
       delegate_to: localhost
 
-    - name: Remove healthcheck archive
-      file:
-        path: /tmp/health_check.tgz
-        state:  absent
+    - name: Removindg downloaded file
+      shell: rm -rf /tmp/health_check.zip /tmp/*_helthcheck.txt

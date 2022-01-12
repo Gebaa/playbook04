@@ -1,0 +1,23 @@
+---
+
+- name: Helth check
+  hosts:  local
+  tasks:
+
+  - name: run several command
+    shell: "{{ item  }}"
+    loop:
+      - ls -ltr
+      - hostname
+      - df -h
+      - route -n
+    register: comm
+
+  - name: Copy data in to a file
+    copy:
+      content:  "{{ comm.stdout_lines }}"
+      dest: /opt/ansi_sigtel/playbook04/before_migration_routera_peerip_list
+ 
+  - name: debug output
+    debug:
+      msg: "{{ comm.stdout_lines }}"

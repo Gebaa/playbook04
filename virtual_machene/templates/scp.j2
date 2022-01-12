@@ -1,5 +1,5 @@
 #!/usr/bin/expect -f
-spawn scp /tmp/health_check/{{  ansible_default_ipv4.address  }}_helthcheck.txt root@10.40.3.170:/tmp/
+spawn scp /tmp/{{  ansible_default_ipv4.address  }}_helthcheck.txt root@10.40.3.170:/tmp/
 expect "password:"
 send "Gebris@10192029\n"
 expect eof
